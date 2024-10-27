@@ -37,3 +37,7 @@ https://arxiv.org/abs/1801.07892
 SwapText: Image Based Texts Transfer in Scenes  
 Qiangpeng Yang, Hongsheng Jin, Jun Huang, Wei Lin  
 https://arxiv.org/abs/2003.08152  
+
+## CR2
+
+--
