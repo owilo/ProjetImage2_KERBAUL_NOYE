@@ -11,7 +11,9 @@
 std::size_t nPixelsChanged(std::uint8_t* image1, std::uint8_t* image2, std::size_t width, std::size_t height) {
     std::size_t nChanges = 0;
     for (std::size_t i = 0; i < width * height; ++i) {
-        nChanges += image1 != image2;
+        if (image1[3 * i] != image2[3 * i] || image1[3 * i + 1] != image2[3 * i + 1] || image1[3 * i + 2] != image2[3 * i + 2]) {
+            ++nChanges;
+        }
     }
     return nChanges;
 }
@@ -150,7 +152,7 @@ int main(int argc, char* argv[]) {
     std::cout << "PSNR : " << psnr(image1, image2, width, height) << " dB\n";
     std::cout << "SSIM : " << ssim(image1, image2, width, height) << '\n';
     std::size_t pixelsChanged{nPixelsChanged(image1, image2, width, height)};
-    std::cout << "Pixels changés : " << pixelsChanged << " (" << static_cast<double>(pixelsChanged) / (width * height) << "%)\n";
+    std::cout << "Pixels changés : " << pixelsChanged << " (" << 100.0 * pixelsChanged / (width * height) << "%)\n";
     auto [avgE1, rE1, gE1, bE1] = entropy(image1, width, height);
     std::cout << "Entropie image originale : " << avgE1 << "bits/px (par canal : [" << rE1 << ", " << gE1 << ", " << bE1 << "])\n";
     auto [avgE2, rE2, gE2, bE2] = entropy(image2, width, height);
