@@ -35,7 +35,7 @@ early_stopping = EarlyStopping(monitor='val_loss', patience=3)
 
 history = model.fit(
     train_images, train_labels,
-    epochs=10,
+    epochs=30,
     batch_size=64,
     validation_data=(test_images, test_labels),
     callbacks=[early_stopping]
@@ -59,12 +59,12 @@ plt.ylabel('True Label')
 plt.tight_layout()
 
 plt.savefig('confusion_matrix.png')
-plt.show()
 
+plt.figure(figsize=(8, 6))
 plt.plot(history.history['accuracy'], label='Train accuracy')
 plt.plot(history.history['val_accuracy'], label='Test accuracy')
 plt.title('Accuracy over epochs')
 plt.xlabel('Epochs')
 plt.ylabel('Accuracy')
 plt.legend()
-plt.show()
+plt.savefig('accuracy_over_epochs.png')
