@@ -10,7 +10,7 @@
 #include <vector>
 #include <cstdint>
 
-void encrypt(std::uint8_t* image, std::size_t width, std::size_t height, int x1, int y1, int x2, int y2, const std::uint8_t* key, std::size_t keyLength) {
+void encrypt_bits(std::uint8_t* image, std::size_t width, std::size_t height, int x1, int y1, int x2, int y2, const std::uint8_t* key, std::size_t keyLength, std::size_t nbBits) {
     std::vector<std::uint8_t> data(3 * (x2 - x1 + 1) * (y2 - y1 + 1));
     std::size_t pad = x2 - x1;
     for (std::size_t i = 0; i <= x2 - x1; ++i) {
@@ -34,15 +34,26 @@ void encrypt(std::uint8_t* image, std::size_t width, std::size_t height, int x1,
     for (std::size_t i = 0; i <= x2 - x1; ++i) {
         for (std::size_t j = 0; j <= y2 - y1; ++j) {
             for (int k = 0; k < 3; ++k) {
-                image[3 * ((y1 + j) * width + x1 + i) + k] = encryptedData[3 * (j + pad * i) + k];
+                uint8_t px_intacte = image[3 * ((y1 + j) * width + x1 + i) + k];
+                std::bitset<8> bits_intactes(px_intacte);
+                uint8_t px_chiffre = encryptedData[3 * (j + pad * i) + k];
+                std::bitset<8> bits_chiffres(px_chiffre);
+
+                for (unsigned int n = 0 ; n < 8 ; n++){
+                    if (n < nbBits){
+                        bits_intactes[n] = bits_chiffres[n];
+                    }
+                }
+
+                image[3 * ((y1 + j) * width + x1 + i) + k] = static_cast<uint8_t>(bits_intactes.to_ulong());
             }
         }
     }
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 8) {
-        std::cerr << "Utilisation: " << argv[0] << " <entrée> <sortie> <x1> <y1> <x2> <y2> <clé>\n";
+    if (argc != 9) {
+        std::cerr << "Utilisation: " << argv[0] << " <entrée> <sortie> <x1> <y1> <x2> <y2> <clé> <nbBits>\n";
         return 1;
     }
 
@@ -52,6 +63,7 @@ int main(int argc, char* argv[]) {
     int y1 = std::stoi(argv[4]);
     int x2 = std::stoi(argv[5]);
     int y2 = std::stoi(argv[6]);
+    int nbBits = std::stoi(argv[8]);
 
     const std::uint8_t* key = reinterpret_cast<const std::uint8_t*>(argv[7]);
     std::size_t keyLength = std::strlen(argv[7]);
@@ -87,7 +99,7 @@ int main(int argc, char* argv[]) {
         std::swap(y1, y2);
     }
 
-    encrypt(image, width, height, x1, y1, x2, y2, key, keyLength);
+    encrypt_bits(image, width, height, x1, y1, x2, y2, key, keyLength, nbBits);
 
     if (!stbi_write_png(output, width, height, channels, image, width * channels)) {
         std::cerr << "Erreur : L'image n'a pas pu être écrite.\n";
