@@ -6,3 +6,4 @@ Sujet #8 : Evaluation de la sécurité visuelle d’images obscures par CNN
 - Code : Contient le code utilisé durant notre développement
 - CompteRendus : Contient nos comptes-rendus
 - Documentation : Sources bibliographiques de nos recherches
+- Slides : Contient les slides de présentation et pour les différents oraux effectués
