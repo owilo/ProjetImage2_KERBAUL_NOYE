@@ -3,6 +3,9 @@ import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.models import load_model, Model
+from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img
+from PIL import Image
 import subprocess
 import os
 import cv2
@@ -18,6 +21,60 @@ if len(sys.argv) < 4:
     print("Format : python " + sys.argv[0] + " <Nom de la méthode d'obscuration> <Obscurer le dataset d'entraînement? (0/1)> <Taille min de la région obscurcie>")
     sys.exit()
 
+"""
+--------
+"""
+
+def preprocess_image(img_path):
+    img = load_img(img_path, target_size=(32, 32))
+    img_array = img_to_array(img) / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+    return img_array
+
+def array_to_pil_image(img_array):
+    img_array = np.squeeze(img_array, axis=0)
+    img_array = (img_array * 255).astype(np.uint8)
+    pil_img = Image.fromarray(img_array)
+    return pil_img
+
+model_path = '../obscuration/cifar-autoencoder.h5'
+autoencoder = load_model(model_path)
+
+def ae(input, output, x1, y1, x2, y2, n):
+    encoder = Model(inputs=autoencoder.input, outputs=autoencoder.layers[-8].output)
+    decoder_input = tf.keras.layers.Input(shape=(4, 4, 64))
+    decoder_output = autoencoder.layers[-7](decoder_input)
+    for layer in autoencoder.layers[-6:]:
+        decoder_output = layer(decoder_output)
+    decoder = Model(inputs=decoder_input, outputs=decoder_output)
+
+    input_img = preprocess_image(input)
+
+    latent = encoder.predict(input_img)
+
+    random_indices = np.random.choice(latent.shape[1], size=n, replace=False)
+
+    for i in random_indices:
+        latent[:, i] = np.random.rand()
+
+    output_img = decoder.predict(latent)
+
+    output_img = np.squeeze(output_img)
+    output_img = np.clip(output_img * 255, 0, 255).astype('uint8')
+
+    result_img = array_to_img(output_img)
+
+    crop_box = (x1, y1, x2, y2)
+
+    cropped_section = result_img.crop(crop_box)
+    res = array_to_pil_image(input_img)
+    res.paste(cropped_section, crop_box)
+    res.save(output)
+
+"""
+--------
+"""
+
 (train_images, train_labels), (test_images, test_labels) = datasets.cifar10.load_data()
 
 train_images = train_images.astype('float32') / 255.0
@@ -26,6 +83,13 @@ test_images = test_images.astype('float32') / 255.0
 if sys.argv[2] == "1":
     train_images = train_images[:25000]
     train_labels = train_labels[:25000]
+    
+if sys.argv[1] == "ae":
+    if sys.argv[2] == "1":
+        train_images = train_images[:500]
+        train_labels = train_labels[:500]
+    test_images = train_images[:100]
+    test_labels = train_labels[:100]
 
 train_labels = to_categorical(train_labels, 10)
 test_labels = to_categorical(test_labels, 10)
@@ -89,11 +153,41 @@ def apply_obs(image):
             ["../obscuration/aes", input_path, output_path, str(x1), str(y1), str(x2), str(y2), key],
             capture_output=True, text=True
         )
+    elif sys.argv[1] == "aes_bits" or sys.argv[1] == "all" and type_obs == 4:
+        key = generate_random_key()
+        nb = random.randint(3, 8)
+        print("Params :", x1, y1, x2, y2, key, nb)
+        result = subprocess.run(
+            ["../obscuration/aes_bits", input_path, output_path, str(x1), str(y1), str(x2), str(y2), key, str(nb)],
+            capture_output=True, text=True
+        )
+    elif sys.argv[1] == "distorsion_RGB" or sys.argv[1] == "all" and type_obs == 5:
+        dR = random.randint(5, 10) * random.choice([-1, 1])
+        dG = random.randint(5, 10) * random.choice([-1, 1])
+        dB = random.randint(5, 10) * random.choice([-1, 1])
+        print("Params :", x1, y1, x2, y2, dR, dG, dB)
+        result = subprocess.run(
+            ["../obscuration/distorsion_RGB", input_path, output_path, str(x1), str(y1), str(x2), str(y2), str(dR), str(dG), str(dB)],
+            capture_output=True, text=True
+        )
+    elif sys.argv[1] == "distorsion_sinus" or sys.argv[1] == "all" and type_obs == 6:
+        amp = random.uniform(1, 20)
+        freq = random.uniform(0.1, 10)
+        sens = random.choice([0, 1])
+        print("Params :", x1, y1, x2, y2, amp, freq, sens)
+        result = subprocess.run(
+            ["../obscuration/distorsion_sinus", input_path, output_path, str(x1), str(y1), str(x2), str(y2), str(amp), str(freq), str(sens)],
+            capture_output=True, text=True
+        )
+    elif sys.argv[1] == "ae" or sys.argv[1] == "all" and type_obs == 7:
+        n = random.randint(0, 4)
+        print("Params :", x1, y1, x2, y2, n)
+        ae(input_path, output_path, x1, y1, x2, y2, n)
     else:
         print("Méthode inconnue, stop")
         sys.exit()
 
-    type_obs = (type_obs + 1) % 4
+    type_obs = (type_obs + 1) % 8
 
     """if result.returncode != 0:
         print(f"Erreur pendant l'appel au programme: {result.stderr}")
