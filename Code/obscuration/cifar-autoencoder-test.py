@@ -18,7 +18,7 @@ def array_to_pil_image(img_array):
     return pil_img
 
 if len(sys.argv) < 8:
-    print("Format : python " + sys.argv[0] + " <Image d'entrée> <Image de sortie> <x1> <y1> <x2> <y2> <Nombre de caractéristiques obscurées (0 - 1024)>")
+    print("Format : python " + sys.argv[0] + " <Image d'entrée> <Image de sortie> <x1> <y1> <x2> <y2> <Nombre de caractéristiques obscurées (0 - 2048)>")
     sys.exit(1)
 
 img_path = sys.argv[1]
@@ -34,7 +34,7 @@ import numpy as np
 
 n = int(sys.argv[7])
 
-all_indices = [(i, j, k) for i in range(4) for j in range(4) for k in range(64)]
+all_indices = [(i, j, k) for i in range(4) for j in range(4) for k in range(128)]
 
 np.random.shuffle(all_indices)
 

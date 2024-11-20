@@ -16,12 +16,12 @@ x = Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)
 x = MaxPooling2D((2, 2), padding='same')(x)
 x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
-encoded = Conv2D(64, (3, 3), activation='relu', padding='same')(x)  # Output: (4, 4, 64)
+encoded = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
 
 # Decoder
-x = Conv2D(64, (3, 3), activation='relu', padding='same')(encoded)
+x = Conv2D(128, (3, 3), activation='relu', padding='same')(encoded)
 x = UpSampling2D((2, 2))(x)
 x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
 x = UpSampling2D((2, 2))(x)
@@ -35,7 +35,7 @@ autoencoder.summary()
 
 autoencoder.fit(x_train, x_train,
                 epochs=10,
-                batch_size=256,
+                batch_size=16,
                 shuffle=True,
                 validation_data=(x_test, x_test))
 
@@ -44,7 +44,7 @@ autoencoder.save('cifar-autoencoder.keras')
 encoder = Model(inputs=input_img, outputs=encoded)
 encoder.save('cifar-encoder.keras')
 
-encoded_input = Input(shape=(4, 4, 64))
+encoded_input = Input(shape=(4, 4, 128))
 decoder_layer = autoencoder.layers[-7](encoded_input)
 for layer in autoencoder.layers[-6:]:
     decoder_layer = layer(decoder_layer)
