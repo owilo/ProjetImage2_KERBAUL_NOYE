@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import load_model, Model
+from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array, array_to_img
 from PIL import Image
 
@@ -18,43 +18,40 @@ def array_to_pil_image(img_array):
     return pil_img
 
 if len(sys.argv) < 8:
-    print("Format : python " + sys.argv[0] + " <Image d'entrée> <Image de sortie> <x1> <y1> <x2> <y2> <Nombre de caractéristiques obscurées (0 - 4)>")
+    print("Format : python " + sys.argv[0] + " <Image d'entrée> <Image de sortie> <x1> <y1> <x2> <y2> <Nombre de caractéristiques obscurées (0 - 1024)>")
     sys.exit(1)
 
 img_path = sys.argv[1]
-model_path = 'cifar-autoencoder.h5'
+output_path = sys.argv[2]
 
-autoencoder = load_model(model_path)
-
-encoder = Model(inputs=autoencoder.input, outputs=autoencoder.layers[-8].output)
-latent_dim = encoder.output_shape[-1]
-decoder_input = tf.keras.layers.Input(shape=(4, 4, 64))
-decoder_output = autoencoder.layers[-7](decoder_input)
-for layer in autoencoder.layers[-6:]:
-    decoder_output = layer(decoder_output)
-decoder = Model(inputs=decoder_input, outputs=decoder_output)
+encoder = load_model('cifar-encoder.keras')
+decoder = load_model('cifar-decoder.keras')
 
 input_img = preprocess_image(img_path)
 
 latent = encoder.predict(input_img)
+import numpy as np
 
 n = int(sys.argv[7])
 
-random_indices = np.random.choice(latent.shape[1], size=n, replace=False)
+all_indices = [(i, j, k) for i in range(4) for j in range(4) for k in range(64)]
 
-for i in random_indices:
-    latent[:, i] = np.random.rand()
+np.random.shuffle(all_indices)
+
+selected_indices = all_indices[:n]
+
+for i, j, k in selected_indices:
+    latent[0, i, j, k] = np.random.rand()
+
 
 output_img = decoder.predict(latent)
 
 output_img = np.squeeze(output_img)
 output_img = np.clip(output_img * 255, 0, 255).astype('uint8')
-
 result_img = array_to_img(output_img)
 
 crop_box = (int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]))
-
 cropped_section = result_img.crop(crop_box)
 res = array_to_pil_image(input_img)
 res.paste(cropped_section, crop_box)
-res.save(sys.argv[2])
+res.save(output_path)
