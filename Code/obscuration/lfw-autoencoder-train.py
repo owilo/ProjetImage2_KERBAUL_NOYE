@@ -1,4 +1,4 @@
-import os
+"""import os
 import numpy as np
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Flatten, Dense
@@ -11,11 +11,11 @@ x_train, x_test = train_test_split(images, test_size=0.1, random_state=0)
 input_img = Input(shape=(256, 256, 3))
 
 # Encoder
-x = Conv2D(32, (3, 3), activation='relu', padding='same')(input_img)
+x = Conv2D(16, (3, 3), activation='relu', padding='same')(input_img)
+x = MaxPooling2D((2, 2), padding='same')(x)
+x = Conv2D(32, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
 x = Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-x = MaxPooling2D((2, 2), padding='same')(x)
-x = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
 x = MaxPooling2D((2, 2), padding='same')(x)
 encoded = Conv2D(128, (3, 3), activation='relu', padding='same')(x)
 
@@ -50,10 +50,10 @@ decoder_layer = autoencoder.layers[-7](encoded_input)
 for layer in autoencoder.layers[-6:]:
     decoder_layer = layer(decoder_layer)
 decoder = Model(inputs=encoded_input, outputs=decoder_layer)
-decoder.save('lfw-decoder.keras')
+decoder.save('lfw-decoder.keras')"""
 
 
-"""import tensorflow as tf
+import tensorflow as tf
 import numpy as np
 from sklearn.model_selection import train_test_split
 from tensorflow.keras import layers, models
@@ -71,15 +71,15 @@ def build_encoder(input_shape):
     x = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(inputs)
     x = layers.MaxPooling2D((2, 2), padding='same')(x)
     
-    x = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    x = layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling2D((2, 2), padding='same')(x)
     
-    x = layers.Conv2D(128, (3, 3), activation='relu', padding='same')(x)
+    x = layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
     x = layers.MaxPooling2D((2, 2), padding='same')(x)
     
     x = layers.Flatten()(x)
     
-    latent = layers.Dense(256, activation='relu')(x)
+    latent = layers.Dense(64, activation='relu')(x)
     
     encoder = models.Model(inputs, latent, name="encoder")
     return encoder
@@ -88,11 +88,11 @@ def build_encoder(input_shape):
 def build_decoder(latent_dim):
     latent_inputs = layers.Input(shape=(latent_dim,))
     
-    x = layers.Dense(32 * 32 * 128, activation='relu')(latent_inputs)
-    x = layers.Reshape((32, 32, 128))(x)
+    x = layers.Dense(32 * 32 * 64, activation='relu')(latent_inputs)
+    x = layers.Reshape((32, 32, 64))(x)
     
-    x = layers.Conv2DTranspose(128, (3, 3), strides=(2, 2), activation='relu', padding='same')(x)
     x = layers.Conv2DTranspose(64, (3, 3), strides=(2, 2), activation='relu', padding='same')(x)
+    x = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), activation='relu', padding='same')(x)
     x = layers.Conv2DTranspose(32, (3, 3), strides=(2, 2), activation='relu', padding='same')(x)
     
     decoded = layers.Conv2DTranspose(3, (3, 3), activation='sigmoid', padding='same')(x)
@@ -101,7 +101,7 @@ def build_decoder(latent_dim):
     return decoder
 
 encoder = build_encoder(input_shape)
-decoder = build_decoder(256)
+decoder = build_decoder(64)
 
 autoencoder_input = layers.Input(shape=input_shape)
 latent_representation = encoder(autoencoder_input)
@@ -122,4 +122,4 @@ autoencoder.fit(
 )
 
 encoder.save('lfw-encoder.keras')
-decoder.save('lfw-decoder.keras')"""
+decoder.save('lfw-decoder.keras')

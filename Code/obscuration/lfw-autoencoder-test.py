@@ -34,7 +34,7 @@ import numpy as np
 
 n = int(sys.argv[7])
 
-all_indices = [(i, j, k) for i in range(4) for j in range(4) for k in range(128)]
+all_indices = [(i, j, k) for i in range(32) for j in range(32) for k in range(32)]
 
 np.random.shuffle(all_indices)
 
@@ -53,5 +53,5 @@ result_img = array_to_img(output_img)
 crop_box = (int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]))
 cropped_section = result_img.crop(crop_box)
 res = array_to_pil_image(input_img)
-res.paste(cropped_section, crop_box)
+#res.paste(cropped_section, crop_box)
 res.save(output_path)
