@@ -11,26 +11,48 @@ firstDraw = True
 lineColor = "#000000"
 first_X, first_Y = 0, 0
 current_X, current_Y = 0, 0
+isFullScreen = False
 
-def enter_command(executable_name, ind):
+def setOptionInFrame(ind):
+    for b in range(len(frame_buttons_obscuration.winfo_children())):
+        current_button = frame_buttons_obscuration.winfo_children()[b]
+        if isinstance(current_button, tk.Button):
+            if b == ind+1:
+                current_button.config(bg="green")
+            else:
+                current_button.config(bg="#d9d9d9")
+
+    for w in frame_options_obscuration.winfo_children():
+        w.pack_forget()
+    
+    for j in range(len(fields[ind])):
+        fields[ind][j].pack(pady=10)
+    
+    apply_obscuration = tk.Button(frame_options_obscuration, text="Appliquer l'obscuration",command=lambda p=cpp_files[ind].split('.')[0],ind_method=ind: enter_command(p,ind_method))
+    apply_obscuration.pack(pady=40)
+    
+
+def enter_command(executable_name, ind_method):
     global output_file
     global bg_image_id
-    print(ind)
+    global sensDistorsion
+
     output_file = "../results/"+output_file_field.get()
     command = "../obscuration/"+executable_name+" "+input_file+" "+output_file+" "+str(first_X)+" "+str(first_Y)+" "+str(current_X)+" "+str(current_Y)
 
-    for i in range(len(fields[ind])):
-        if isinstance(fields[ind][i], tk.Radiobutton):
-            command += " "+str(sensDistorsion)
+    for i in range(len(fields[ind_method])):
+        if isinstance(fields[ind_method][i], tk.Radiobutton):
+            command += " "+str(sensDistorsion.get())
             break
-        elif not isinstance(fields[ind][i], tk.Label):
-            command += " "+str(fields[ind][i].get())
+        elif not isinstance(fields[ind_method][i], tk.Label):
+            command += " "+str(fields[ind_method][i].get())
 
 
     print(command)
     try:
         result = subprocess.run(command, shell=True, capture_output=True, text=True)
         print(result.stderr)
+        label_resultat.config(fg="red")
         label_resultat.config(text=result.stderr)
 
         image = Image.open(output_file)
@@ -44,6 +66,18 @@ def enter_command(executable_name, ind):
     except Exception as e:
         print(f"Erreur lors de l'exécution de la commande: {e}")
         label_resultat.config(text="Erreur d'exécution de la commande.")
+    
+    command = "../evaluation/evaluate"+" "+input_file+" "+output_file
+    print(command)
+    try:
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        print(result.stderr)
+        label_resultat.config(fg="black")
+        label_resultat.config(text=result.stdout)
+    except Exception as e:
+        print(f"Erreur lors de l'exécution de la commande: {e}")
+        label_resultat.config(text="Erreur d'exécution de la commande.")
+
 
 
 def reset(event):
@@ -100,7 +134,7 @@ def openFileExplorer():
         canvas.image = image_tk
         canvas.config(width=image.width, height=image.height)
         bg_image_id = canvas.create_image(0, 0, anchor="nw", image=image_tk)
-        canvas.grid(row=10,column=4,pady=40)
+        canvas.grid(row=2,column=0,pady=40)
 
 def openColorDialog():
     global lineColor
@@ -109,22 +143,18 @@ def openColorDialog():
 def closeWindow(event=None):
     window.destroy()
 
+def resize_window(event=None):
+    global isFullScreen
+    isFullScreen = not isFullScreen
+    window.attributes("-fullscreen", isFullScreen)
+
 window = tk.Tk()
-window.attributes("-fullscreen", True)
+window.attributes("-fullscreen", isFullScreen)
 window.title("Application Projet Image M2")
 window.bind("<Escape>",closeWindow)
+window.bind('<f>', resize_window) 
 
 bg_image_id = None
-
-loadImageButton = tk.Button(window, text="Ouvrir une image", command=openFileExplorer)
-loadImageButton.grid()
-
-changeColorButton = tk.Button(window, text="Changer de couleur", command=openColorDialog)
-changeColorButton.grid()
-
-canvas = tk.Canvas(window)
-canvas.bind("<B1-Motion>", draw_rectangle)
-canvas.bind("<ButtonRelease-1>", reset)
 
 input_file = ""
 output_file = ""
@@ -134,30 +164,51 @@ cpp_directory =  "../obscuration/"
 cpp_files = os.listdir(cpp_directory)
 cpp_files = [f for f in cpp_files if f.endswith(".cpp") and os.path.isfile(os.path.join(cpp_directory, f))]
 
-output_label = tk.Label(window,text="Fichier de sortie : ")
-output_label.grid(padx=20)
-output_file_field = tk.Entry(window, width=30)
-output_file_field.grid(padx=20)
+sensDistorsion = tk.IntVar()
+frame_buttons_obscuration = tk.Frame(window)
+frame_buttons_obscuration.grid(row=0, column=1, padx=20, pady=20)
 
-label_resultat = tk.Label(window, text="", font=("Arial", 10, "italic"), fg="red")
-label_resultat.grid()
+frame_options_obscuration = tk.Frame(window)
+frame_options_obscuration.grid(row=0, column=2, padx=20, pady=20)
 
-sensDistorsion = 0
+frame_image_input = tk.Frame(window)
+frame_image_input.grid(row=0, column=0, padx=20, pady=20)
 
-# print(cpp_files)
+length_for_button = len(max(cpp_files, key=len))
 
-fields = [[tk.Label(window, text="Clé de chiffrement : ", relief="solid", width=30),tk.Entry(window, width=30)],
-          [tk.Label(window, text="Clé de chiffrement : ", relief="solid", width=30),tk.Entry(window, width=30), tk.Label(window, text="Nombre de bits chiffrés : ", relief="solid", width=30),tk.Scale(window,from_=1, to=8, orient="horizontal", width=30)],
-          [tk.Label(window, text="Décalage R : ", relief="solid", width=30),tk.Scale(window,from_=-10, to=10, orient="horizontal", width=30),tk.Label(window, text="Décalage G : ", relief="solid", width=30),tk.Scale(window,from_=-10, to=10, orient="horizontal", width=30),tk.Label(window, text="Décalage B : ", relief="solid", width=30),tk.Scale(window,from_=-10, to=10, orient="horizontal", width=30)],
-          [tk.Label(window, text="Amplitude : ", relief="solid", width=30),tk.Scale(window,from_=1, to=20, orient="horizontal", width=30),tk.Label(window, text="Fréquence : ", relief="solid", width=30),tk.Scale(window,from_=0.1, to=1.0, resolution=0.05, orient="horizontal", width=30),tk.Label(window, text="Sens distorsion : ", relief="solid", width=30), tk.Radiobutton(window, text="Verticale", variable=sensDistorsion, value=0, width=30), tk.Radiobutton(window, text="Horizontale", variable=sensDistorsion, value=1, width=30) ],
-          [tk.Label(window, text="Taille filtre : ", relief="solid", width=30),tk.Scale(window,from_=3, to=25, resolution=2, orient="horizontal")],
-          [tk.Label(window, text="R : ", relief="solid", width=30),tk.Scale(window,from_=0, to=255, orient="horizontal"),tk.Label(window, text="G : ", relief="solid", width=30),tk.Scale(window,from_=0, to=255, orient="horizontal"),tk.Label(window, text="B : ", relief="solid", width=30),tk.Scale(window,from_=0, to=255, orient="horizontal")],
-          [tk.Label(window, text="Taille bloc pixel : ", relief="solid", width=30),tk.Scale(window,from_=2, to=32, resolution=1, orient="horizontal")]]
+loadImageButton = tk.Button(frame_image_input, text="Ouvrir une image", command=openFileExplorer)
+loadImageButton.grid(row=0, column=0)
 
+changeColorButton = tk.Button(frame_image_input, text="Changer de couleur", command=openColorDialog)
+changeColorButton.grid(row=1, column=0)
+
+canvas = tk.Canvas(frame_image_input)
+canvas.bind("<B1-Motion>", draw_rectangle)
+canvas.bind("<ButtonRelease-1>", reset)
+
+output_label = tk.Label(frame_image_input,text="Fichier de sortie : ")
+output_label.grid(row=3, column=0)
+output_file_field = tk.Entry(frame_image_input, width=30)
+output_file_field.grid(row=4, column=0)
+
+label_resultat = tk.Label(frame_image_input, text="", font=("Arial", 10, "italic"))
+label_resultat.grid(row=5, column=0)
+
+#print(cpp_files)
+
+fields = [
+          [tk.Label(frame_options_obscuration, text="Amplitude : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=1, to=20, orient="horizontal", width=30),tk.Label(frame_options_obscuration, text="Fréquence : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=0.1, to=1.0, resolution=0.05, orient="horizontal", width=30),tk.Label(frame_options_obscuration, text="Sens distorsion : ", relief="solid", width=30), tk.Radiobutton(frame_options_obscuration, text="Verticale", variable=sensDistorsion, value=0, width=30), tk.Radiobutton(frame_options_obscuration, text="Horizontale", variable=sensDistorsion, value=1, width=30) ],
+          [tk.Label(frame_options_obscuration, text="Taille filtre : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=3, to=25, resolution=2, orient="horizontal")],
+          [tk.Label(frame_options_obscuration, text="Clé de chiffrement : ", relief="solid", width=30),tk.Entry(frame_options_obscuration, width=30)],
+          [tk.Label(frame_options_obscuration, text="R : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=0, to=255, orient="horizontal"),tk.Label(frame_options_obscuration, text="G : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=0, to=255, orient="horizontal"),tk.Label(frame_options_obscuration, text="B : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=0, to=255, orient="horizontal")],
+          [tk.Label(frame_options_obscuration, text="Taille bloc pixel : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=2, to=32, resolution=1, orient="horizontal")],
+          [tk.Label(frame_options_obscuration, text="Décalage R : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=-10, to=10, orient="horizontal", width=30),tk.Label(frame_options_obscuration, text="Décalage G : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=-10, to=10, orient="horizontal", width=30),tk.Label(frame_options_obscuration, text="Décalage B : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=-10, to=10, orient="horizontal", width=30)],
+          [tk.Label(frame_options_obscuration, text="Clé de chiffrement : ", relief="solid", width=30),tk.Entry(frame_options_obscuration, width=30), tk.Label(frame_options_obscuration, text="Nombre de bits chiffrés : ", relief="solid", width=30),tk.Scale(frame_options_obscuration,from_=1, to=8, orient="horizontal", width=30)]]
+
+label_obscuration = tk.Label(frame_buttons_obscuration, text="Méthodes d'obscurations", relief="solid", width=30)
+label_obscuration.pack(pady=10)
 for i in range(len(cpp_files)):
-    button = tk.Button(window, text=cpp_files[i],command=lambda p=cpp_files[i].split('.')[0],ind=i: enter_command(p,ind))
-    button.grid(row=0,column=i+1, padx=20,pady=20)
-    for j in range(len(fields[i])):
-        fields[i][j].grid(row=j+1,column=i+1, padx=10,pady=10)
+    button = tk.Button(frame_buttons_obscuration, width=length_for_button, text=cpp_files[i],command=lambda ind=i: setOptionInFrame(ind))
+    button.pack(pady=10)
 
 window.mainloop()
