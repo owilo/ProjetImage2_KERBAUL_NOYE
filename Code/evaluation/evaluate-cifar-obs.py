@@ -37,7 +37,7 @@ def array_to_pil_image(img_array):
     pil_img = Image.fromarray(img_array)
     return pil_img
 
-model_path = '../obscuration/cifar-autoencoder.h5'
+model_path = '../obscuration/cifar-autoencoder.keras'
 autoencoder = load_model(model_path)
 
 def ae(input, output, x1, y1, x2, y2, n):
