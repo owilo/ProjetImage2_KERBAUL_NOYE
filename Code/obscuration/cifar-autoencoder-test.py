@@ -30,7 +30,6 @@ decoder = load_model('cifar-decoder.keras')
 input_img = preprocess_image(img_path)
 
 latent = encoder.predict(input_img)
-import numpy as np
 
 n = int(sys.argv[7])
 
