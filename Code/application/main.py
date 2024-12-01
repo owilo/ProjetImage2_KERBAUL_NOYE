@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 from tkinter.colorchooser import askcolor
 import os
 import subprocess
+import cv2
 
 last_X = 0
 last_Y = 0
@@ -40,48 +41,72 @@ def enter_command(executable_name, ind_method):
     global bg_image_id
     global sensDistorsion
 
-    output_file = "../results/"+output_file_field.get()
-    command = "../obscuration/"+executable_name+" "+input_file+" "+output_file+" "+str(first_X)+" "+str(first_Y)+" "+str(current_X)+" "+str(current_Y)
+    file_type = input_file.split('.')[1]
 
-    for i in range(len(fields[ind_method])):
-        if isinstance(fields[ind_method][i], tk.Radiobutton):
-            command += " "+str(sensDistorsion.get())
-            break
-        elif not isinstance(fields[ind_method][i], tk.Label):
-            command += " "+str(fields[ind_method][i].get())
+    if file_type in ["jpg","png"]:
+        output_file = "../results/"+output_file_field.get()
+        command = "../obscuration/"+executable_name+" "+input_file+" "+output_file+" "+str(first_X)+" "+str(first_Y)+" "+str(current_X)+" "+str(current_Y)
 
-
-    print(command)
-    try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        print(result.stderr)
-        label_resultat.config(fg="red")
-        label_resultat.config(text=result.stderr)
-
-        image = Image.open(output_file)
-        image_tk = ImageTk.PhotoImage(image)
-
-        if bg_image_id:
-            canvas.delete(bg_image_id)
-        canvas.image = image_tk
-        bg_image_id = canvas.create_image(0, 0, anchor="nw", image=image_tk)
-
-    except Exception as e:
-        print(f"Erreur lors de l'exécution de la commande: {e}")
-        label_resultat.config(text="Erreur d'exécution de la commande.")
-    
-    command = "../evaluation/evaluate"+" "+input_file+" "+output_file
-    print(command)
-    try:
-        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-        print(result.stderr)
-        label_resultat.config(fg="black")
-        label_resultat.config(text=result.stdout)
-    except Exception as e:
-        print(f"Erreur lors de l'exécution de la commande: {e}")
-        label_resultat.config(text="Erreur d'exécution de la commande.")
+        for i in range(len(fields[ind_method])):
+            if isinstance(fields[ind_method][i], tk.Radiobutton):
+                command += " "+str(sensDistorsion.get())
+                break
+            elif not isinstance(fields[ind_method][i], tk.Label):
+                command += " "+str(fields[ind_method][i].get())
 
 
+        print(command)
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            print(result.stderr)
+            label_resultat.config(fg="red")
+            label_resultat.config(text=result.stderr)
+
+            image = Image.open(output_file)
+            image_tk = ImageTk.PhotoImage(image)
+
+            if bg_image_id:
+                canvas.delete(bg_image_id)
+            canvas.image = image_tk
+            bg_image_id = canvas.create_image(0, 0, anchor="nw", image=image_tk)
+
+        except Exception as e:
+            print(f"Erreur lors de l'exécution de la commande: {e}")
+            label_resultat.config(text="Erreur d'exécution de la commande.")
+        
+        command = "../evaluation/evaluate"+" "+input_file+" "+output_file
+        print(command)
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            print(result.stderr)
+            label_resultat.config(fg="black")
+            label_resultat.config(text=result.stdout)
+        except Exception as e:
+            print(f"Erreur lors de l'exécution de la commande: {e}")
+            label_resultat.config(text="Erreur d'exécution de la commande.")
+
+    elif file_type in ["mp4"]:
+        output_file = "../results/"+output_file_field.get()
+        command = "python3 ../videos/main.py"+" "+input_file+" "+output_file+" ../obscuration/"+executable_name
+
+        for i in range(len(fields[ind_method])):
+            if isinstance(fields[ind_method][i], tk.Radiobutton):
+                command += " "+str(sensDistorsion.get())
+                break
+            elif not isinstance(fields[ind_method][i], tk.Label):
+                command += " "+str(fields[ind_method][i].get())
+
+        print(command)
+
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            print(result.stderr)
+            label_resultat.config(fg="red")
+            label_resultat.config(text=result.stderr)
+
+        except Exception as e:
+            print(f"Erreur lors de l'exécution de la commande: {e}")
+            label_resultat.config(text="Erreur d'exécution de la commande.")
 
 def reset(event):
     global firstDraw
@@ -119,25 +144,50 @@ def draw_rectangle(event):
 
 def openFileExplorer():
     global bg_image_id, input_file
-    image_file = filedialog.askopenfilename(
-        title="Choisir une image",
+    name_file = filedialog.askopenfilename(
+        title="Choisir une image ou une vidéo",
         filetypes=[("Tous les fichiers", "*.*")]
     )
 
-    if image_file:
-        print("Fichier sélectionné : " + image_file)
-        input_file = image_file
+    if name_file:
+        file_type = name_file.split('.')[1]
+        if file_type in ["jpg","png"]:
+            print("Image sélectionnée : " + name_file)
+            input_file = name_file
 
-        image = Image.open(image_file)
-        image_tk = ImageTk.PhotoImage(image)
+            image = Image.open(name_file)
+            image_tk = ImageTk.PhotoImage(image)
 
-        if bg_image_id:
-            canvas.delete(bg_image_id)
+            if bg_image_id:
+                canvas.delete(bg_image_id)
 
-        canvas.image = image_tk
-        canvas.config(width=image.width, height=image.height)
-        bg_image_id = canvas.create_image(0, 0, anchor="nw", image=image_tk)
-        canvas.grid(row=2,column=0,pady=40)
+            canvas.image = image_tk
+            canvas.config(width=image.width, height=image.height)
+            bg_image_id = canvas.create_image(0, 0, anchor="nw", image=image_tk)
+            canvas.grid(row=2,column=0,pady=40)
+        elif file_type in ["mp4"]:
+            print("Vidéo sélectionnée : " + name_file)
+            input_file = name_file
+
+            video_file = cv2.VideoCapture(name_file)
+            if not video_file.isOpened():
+                print("Erreur : Impossible d'ouvrir la vidéo.")
+                exit()
+            
+            ret, frame = video_file.read()
+            video_file.release()
+            
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image = Image.fromarray(frame)
+            image_tk = ImageTk.PhotoImage(image)
+
+            if bg_image_id:
+                canvas.delete(bg_image_id)
+
+            canvas.image = image_tk
+            canvas.config(width=image.width, height=image.height)
+            bg_image_id = canvas.create_image(0, 0, anchor="nw", image=image_tk)
+            canvas.grid(row=2,column=0,pady=40)
 
 def show_frame_classique():
     frame_obscuration.grid(row=0, column=0, padx=20, pady=20)
@@ -167,6 +217,7 @@ def show_frame_evaluationIA():
     frame_buttons_obscuration_app2.grid(row=0, column=0, padx=20, pady=20)
     frame_choix_train_dataset.grid(row=0, column=1, padx=20,pady=20)
     frame_evaluate.grid(row=0, column=2,padx=20,pady=20)
+    frame_resultat_evaluation.grid(row=1,column=0)
 
 
 def hide_frame_evaluationIA():
@@ -197,12 +248,43 @@ def setObscurationMode(ind):
                 current_button.config(bg="#d9d9d9")
 
 def launch_evaluation():
+    global canvas_accuracy
+    global canvas_confusion
+    global window
+    global accuracy_bg
+    global confusion_bg
+
     obscurationMethod = cpp_files[obscurationMode].split('.')[0]
     command = "python3 ../evaluation/evaluate-cifar-obs.py"+" "+obscurationMethod+" "+str(train_dataset_is_obscurated.get())+" "+str(isContextuel.get())
     print(command)
 
     try:
-        os.system("gnome-terminal -e 'bash -c \""+command+"&& exit; exec bash\"'")
+        # Lancer un terminal xterm
+        process = subprocess.Popen(["xterm", "-e", command])
+        process.wait()
+
+        print("Evaluation terminée")
+
+        canvas_accuracy.pack(side="left",padx=20,pady=20)
+        canvas_confusion.pack(side="left",padx=20,pady=20)
+
+        image_accuracy = Image.open("accuracy_over_epochs.png")
+        image_confusion = Image.open("confusion_matrix.png")
+        image_accuracy = image_accuracy.resize((400, 300), Image.ANTIALIAS)
+        image_confusion = image_confusion.resize((500, 400), Image.ANTIALIAS)
+        image_accuracy_tk = ImageTk.PhotoImage(image_accuracy)
+        image_confusion_tk = ImageTk.PhotoImage(image_confusion)
+
+        if accuracy_bg:
+            canvas_accuracy.delete(accuracy_bg)
+        if confusion_bg:
+            canvas_confusion.delete(confusion_bg)
+
+        canvas_accuracy.image = image_accuracy_tk
+        accuracy_bg = canvas_accuracy.create_image(0, 0, anchor="nw", image=image_accuracy_tk)
+        canvas_confusion.image = image_confusion_tk
+        confusion_bg = canvas_confusion.create_image(0, 0, anchor="nw", image=image_confusion_tk)
+
     except Exception as e:
         print(f"Erreur lors de l'exécution de la commande: {e}")
         label_resultat.config(text="Erreur d'exécution de la commande.")
@@ -218,6 +300,9 @@ window.bind('<Control-slash>', resize_window)
 window.bind('<Return>', switch_app) 
 
 bg_image_id = None
+
+accuracy_bg = None
+confusion_bg = None
 
 input_file = ""
 output_file = ""
@@ -246,7 +331,7 @@ show_frame_classique()
 
 length_for_button = len(max(cpp_files, key=len))
 
-loadImageButton = tk.Button(frame_image_input, width=40, text="Ouvrir une image", command=openFileExplorer)
+loadImageButton = tk.Button(frame_image_input, width=40, text="Ouvrir une image ou une vidéo", command=openFileExplorer)
 loadImageButton.grid(row=0, column=0, padx=20, pady=20)
 
 changeColorButton = tk.Button(frame_image_input, width=40, text="Changer de couleur", command=openColorDialog)
@@ -317,6 +402,11 @@ contextuel_option2.pack(pady=10)
 frame_evaluate = tk.Frame(frame_evaluationIA)
 evaluate_button = tk.Button(frame_evaluate, text="Lancer l'évaluation",width=30, command=launch_evaluation)
 evaluate_button.pack(pady=10)
+
+frame_resultat_evaluation = tk.Frame(frame_evaluationIA)
+canvas_accuracy = tk.Canvas(frame_resultat_evaluation)
+canvas_confusion = tk.Canvas(frame_resultat_evaluation)
+
 ##############################################################################################################
 
 
