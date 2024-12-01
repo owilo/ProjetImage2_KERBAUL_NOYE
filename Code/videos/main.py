@@ -1,11 +1,12 @@
 import cv2
 import os
 import subprocess
+import sys
 
-
+arguments = sys.argv
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-cap = cv2.VideoCapture("video.mp4")
+cap = cv2.VideoCapture(arguments[1])
 if not cap.isOpened():
     print("Erreur : Impossible d'ouvrir la vidéo.")
     exit()
@@ -16,8 +17,9 @@ fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-out = cv2.VideoWriter('output_video.mp4', fourcc, 30.0, (width, height))
+out = cv2.VideoWriter(arguments[2], fourcc, 30.0, (width, height))
 frame_number = 0
+output_file = "frame_obscurcie.png"
 
 while True:
     ret, frame = cap.read()
@@ -36,8 +38,11 @@ while True:
     filename = f"frame_{frame_number}.png"
     cv2.imwrite(filename, frame)
 
-    output_file = "frame_obscurcie.png"
-    command = "../obscuration/pixelisation"+" "+filename+" "+output_file+" "+str(x)+" "+str(y)+" "+str(x+w)+" "+str(y+h)+" 20"          
+    command = arguments[3]+" "+filename+" "+output_file+" "+str(x)+" "+str(y)+" "+str(x+w)+" "+str(y+h)
+
+    for i in range(4,len(arguments)):
+        command += " "+str(arguments[i])
+
     subprocess.run(command, shell=True, capture_output=False, text=False)
 
     frame_obscurcie = cv2.imread(output_file)
@@ -46,6 +51,7 @@ while True:
     out.write(frame_obscurcie)
     frame_number += 1
 
+os.remove(output_file)
 cap.release()
 out.release()
 cv2.destroyAllWindows()
